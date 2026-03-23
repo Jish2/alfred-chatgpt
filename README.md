@@ -21,19 +21,19 @@ Query ChatGPT via the `chatgpt` keyword, the [Universal Action](https://www.alfr
 
 ![Querying ChatGPT](Workflow/images/about/chatgpttextview.png)
 
-* <kbd>↩</kbd> Ask a new question.
-* <kbd>⌘</kbd><kbd>↩</kbd> Clear and start new chat.
-* <kbd>⌥</kbd><kbd>↩</kbd> Copy last answer.
-* <kbd>⌃</kbd><kbd>↩</kbd> Copy full chat.
-* <kbd>⇧</kbd><kbd>↩</kbd> Stop generating answer.
+* <kbd>↩&#xFE0E;</kbd> Ask a new question.
+* <kbd>⌘</kbd><kbd>↩&#xFE0E;</kbd> Clear and start new chat.
+* <kbd>⌥</kbd><kbd>↩&#xFE0E;</kbd> Copy last answer.
+* <kbd>⌃</kbd><kbd>↩&#xFE0E;</kbd> Copy full chat.
+* <kbd>⇧</kbd><kbd>↩&#xFE0E;</kbd> Stop generating answer.
 
 #### Chat History
 
-View Chat History with ⌥↩ in the `chatgpt` keyword. Each result shows the first question as the title and the last as the subtitle.
+View Chat History with ⌥↩&#xFE0E; in the `chatgpt` keyword. Each result shows the first question as the title and the last as the subtitle.
 
 ![Viewing chat histories](Workflow/images/about/chatgpthistory.png)
 
-<kbd>↩</kbd> to archive the current chat and load the selected one. Older chats can be trashed with the `Delete` [Universal Action](https://www.alfredapp.com/help/features/universal-actions/). Select multiple chats with the [File Buffer](https://www.alfredapp.com/help/features/file-search/#file-buffer).
+<kbd>↩&#xFE0E;</kbd> to archive the current chat and load the selected one. Older chats can be trashed with the `Delete` [Universal Action](https://www.alfredapp.com/help/features/universal-actions/). Select multiple chats with the [File Buffer](https://www.alfredapp.com/help/features/file-search/#file-buffer).
 
 ### DALL·E
 
@@ -43,6 +43,6 @@ Query DALL·E via the `dalle` keyword.
 
 ![Querying DALL-E](Workflow/images/about/dalletextview.png)
 
-* <kbd>↩</kbd> Send a new prompt.
-* <kbd>⌘</kbd><kbd>↩</kbd> Archive images.
-* <kbd>⌥</kbd><kbd>↩</kbd> Reveal last image in the Finder.
+* <kbd>↩&#xFE0E;</kbd> Send a new prompt.
+* <kbd>⌘</kbd><kbd>↩&#xFE0E;</kbd> Archive images.
+* <kbd>⌥</kbd><kbd>↩&#xFE0E;</kbd> Reveal last image in the Finder.
