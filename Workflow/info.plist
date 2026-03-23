@@ -2416,20 +2416,20 @@ Query DALL·E via the `dalle` keyword.
 			<key>config</key>
 			<dict>
 				<key>default</key>
-				<string>gpt-5-nano</string>
+				<string>gpt-5.4-nano</string>
 				<key>pairs</key>
 				<array>
 					<array>
-						<string>GPT 5 nano</string>
-						<string>gpt-5-nano</string>
+						<string>GPT 5.4 nano</string>
+						<string>gpt-5.4-nano</string>
 					</array>
 					<array>
-						<string>GPT 5 mini</string>
-						<string>gpt-5-mini</string>
+						<string>GPT 5.4 mini</string>
+						<string>gpt-5.4-mini</string>
 					</array>
 					<array>
-						<string>GPT 5</string>
-						<string>gpt-5</string>
+						<string>GPT 5.4</string>
+						<string>gpt-5.4</string>
 					</array>
 					<array>
 						<string>GPT 4.1 nano</string>
