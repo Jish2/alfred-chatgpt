@@ -103,7 +103,7 @@
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
-				<string>scripts/ephemeral.js</string>
+				<string>scripts/ephemeral-filter.js</string>
 				<key>skipuniversalaction</key>
 				<true/>
 				<key>subtext</key>
@@ -134,7 +134,7 @@
 				<key>footertext</key>
 				<string>Ephemeral · ↩ Discard · ⌘C Copy answer · Esc Close</string>
 				<key>inputfile</key>
-				<string>scripts/ephemeral.js</string>
+				<string>scripts/ephemeral.sh</string>
 				<key>inputtype</key>
 				<integer>1</integer>
 				<key>loadingtext</key>
@@ -621,7 +621,6 @@ Rules:
 	<key>variablesdontexport</key>
 	<array>
 		<string>streaming_now</string>
-		<string>stream_marker</string>
 	</array>
 	<key>version</key>
 	<string>0.1.0</string>
