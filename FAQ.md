@@ -1,49 +1,56 @@
-# Frequently Asked Questions (FAQ)
+# FAQ
 
-### How do I set up an alternative AI model?
+### Where does my data go? Do I need an OpenAI API key?
 
-The workflow offers the ability to change the API end points and override model names in the [Workflow Environment Variables](https://www.alfredapp.com/help/workflows/advanced/variables/#environment). This requires advanced configuration and is not something we can provide support for, but [our community are doing it with great success and can help you](https://www.alfredforum.com/topic/21544-using-alternative-and-local-models-with-the-chatgpt-dall-e-workflow/).
+No API key. The workflow shells out to the local `[codex](https://github.com/openai/codex)`
+CLI, which talks to the OpenAI Responses API using your **ChatGPT
+subscription** session. Make sure `codex login` has been run at least once.
 
-### How do I access the service behind a proxy?
+### How do I switch models?
 
-Add a new https_proxy key in [Workflow Environment Variables](https://www.alfredapp.com/help/workflows/advanced/variables/#environment). Or configure the proxy for all workflows under Alfred Preferences → Advanced → Network.
+Edit **Configure Workflow… → Codex Model** in Alfred. Default is
+`gpt-5.4-mini`. Whatever model name `codex responses` accepts will work —
+`gpt-5.4-mini`, `gpt-5.4`, `gpt-5.2`, `gpt-5.2-mini`, `gpt-4o`, `o3`, etc.
 
-### Why can’t I use the workflow with a ChatGPT Plus subscription?
+### Why am I getting `Unsupported value: 'minimal' is not supported with…`?
 
-[The ChatGPT API and ChatGPT Plus subscription are billed separately.](https://help.openai.com/en/articles/6950777-what-is-chatgpt-plus#h_e3d911c532)
+Some models (e.g. `gpt-5.2`) don't accept the `minimal` reasoning level. Pick
+`low`, `medium`, `high`, or `xhigh` in **Configuration → Reasoning Effort**, or
+choose **None** to use the model's own default.
 
-### How can I reuse pre-made prompts?
+### The `gg` (persistent) mode opens chatgpt.com but doesn't press Send.
 
-Make a new workflow with a [Keyword Input](https://www.alfredapp.com/help/workflows/inputs/keyword/) and connect it to an [Arg and Vars Utility](https://www.alfredapp.com/help/workflows/utilities/argument/) with your custom prompt text plus `{query}`, which will be replaced with new input from the Keyword. Then connect it to a [Call External Trigger Output](https://www.alfredapp.com/help/workflows/outputs/call-external-trigger/) set to open `continue_chat` from this workflow.
+Two likely causes:
 
-### Is there a video which shows how to use the workflow?
+1. **Accessibility permission.** The script presses Return via
+  `osascript -e 'tell application "System Events" to key code 36'`. macOS
+   needs to allow `osascript` (or `Alfred`) under *System Settings → Privacy &
+   Security → Accessibility*. You'll be prompted on first run.
+2. **Browser too slow.** Increase **Persistent Submit Delay (ms)**, or set
+  **Browser Bundle ID** so the script focuses your browser before pressing
+   Return (e.g. `com.google.Chrome`, `com.apple.Safari`,
+   `company.thebrowser.Browser` for Arc).
 
-[Yes.](https://youtube.com/watch?v=eNPMqyV8psY)
+### The terminal command `gt` pastes into the wrong window.
 
-### Why does nothing happen when I run the workflow?
+Alfred pastes into whatever app is frontmost when the workflow returns. Make
+sure your terminal was the active window before invoking Alfred. If you alt-tab
+during the codex call, Alfred will follow you.
 
-Something always happens, so check the [debugger](https://www.alfredapp.com/help/workflows/advanced/debugger/). Ensure you [installed the Automation Tasks](https://www.alfredapp.com/help/kb/automation-task-not-found/).
+### `codex` not found from Alfred.
 
-### How do I report an issue?
+Alfred runs scripts with a minimal `PATH`. The scripts already prepend
+`/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin`. If your `codex` is somewhere
+else (e.g. `~/.local/bin`), add a Workflow Environment Variable named `PATH`
+that includes that directory.
 
-Accurate and thorough information is crucial for a proper diagnosis. **At a minimum, your report should include:**
+### How do I see what the model is actually being asked?
 
-* The [debugger](https://www.alfredapp.com/help/workflows/advanced/debugger/) output of the failing action.
-* Your installed versions of: the Workflow, Alfred, and macOS. *Be precise, don’t say “latest”.*
+Open **Alfred → Workflows → this workflow → ⌘D** (debugger). Each script logs
+its arguments and the codex stream is visible.
 
-### Why do I keep getting Quota exceeded?
+### Can I keep the old chat-history / DALL·E features from the upstream workflow?
 
-You need API credits to use the workflow. You can [view your remaining credits and top up your account on the OpenAI website](https://platform.openai.com/account/billing/overview).
-
-### Why do I keep getting `[Connection Stalled]`?
-
-This happens when the workflow takes too long to receive a reply from the API. Try increasing the timeout in the [Workflow’s Configuration](https://www.alfredapp.com/help/workflows/user-configuration/). If the problem persists, it indicates a problem either with your connection or OpenAI’s service.
-
-[Open a terminal](https://support.apple.com/en-gb/guide/terminal/apd5265185d-f365-44cb-8b09-71a064a42125/mac) and run the following (replace `YOUR_API_KEY` within the quotes with your API key):
-
-```console
-openai_key="YOUR_API_KEY"
-time /usr/bin/curl "https://api.openai.com/v1/chat/completions" --header "Authorization: Bearer ${openai_key}" --header "Content-Type: application/json" --data '{ "model": "gpt-3.5-turbo", "messages": [{ "role": "user", "content": "What is red?" }], "stream": true }'
-```
-
-It should provide a clue as to what is happening. Include the result in your report.
+Not in this fork. They depended on an OpenAI API key. Use the original
+`[alfredapp/openai-workflow](https://github.com/alfredapp/openai-workflow)` if
+you want them.
