@@ -126,7 +126,9 @@ Workflow/
 ├── info.plist                 # Alfred workflow definition
 └── scripts/
     ├── codex-query.sh         # shared `codex responses` wrapper (streams text)
-    ├── ephemeral.js           # JXA Script Filter for streaming text view
+    ├── ephemeral-filter.js    # JXA Script Filter (returns the items JSON)
+    ├── ephemeral.sh           # bash Text View input (streams the answer; live polling)
+    ├── ephemeral.js           # JXA Text View input (kept as reference fallback)
     ├── persistent.sh          # opens chatgpt.com and auto-submits
     └── terminal-cmd.sh        # generates a single shell command
 ```

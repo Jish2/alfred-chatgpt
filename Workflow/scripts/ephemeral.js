@@ -106,7 +106,7 @@ function run(argv) {
   const timeoutSeconds = parseInt(envVar("codex_timeout_seconds") || "30", 10)
 
   const streamingNow = envVar("streaming_now") === "1"
-  const streamMarker = envVar("stream_marker") === "1"
+  const header = `# You\n\n${typedQuery}\n\n# Assistant\n\n`
 
   // First call: kick off the stream.
   if (!streamingNow) {
@@ -123,29 +123,24 @@ function run(argv) {
 
     startStream(workflowDir, scriptPath, typedQuery, model, reasoning, system, streamFile, pidFile)
 
+    // Emit the header *and* a placeholder in the very first frame, so that the
+    // polling branch can immediately full-`replace` with `header + content`.
+    // Saves one full poll cycle (~osascript cold-start time) vs. the old
+    // separate "stream marker" round-trip.
     return JSON.stringify({
       rerun: 0.1,
-      variables: { streaming_now: "1", stream_marker: "1" },
-      response: `# You\n\n${typedQuery}\n\n# Assistant\n\n`,
+      variables: { streaming_now: "1" },
+      response: `${header}…`,
       behaviour: { scroll: "end" }
     })
   }
 
   // Streaming loop.
-  if (streamMarker) {
-    // First poll after launch: drop a marker so subsequent updates `replacelast`.
-    return JSON.stringify({
-      rerun: 0.1,
-      variables: { streaming_now: "1" },
-      response: "…",
-      behaviour: { response: "append" }
-    })
-  }
-
   const content = readFile(streamFile)
   const pidStr = readFile(pidFile).trim()
   const pid = pidStr ? parseInt(pidStr, 10) : 0
   const alive = pid > 0 ? pidAlive(pid) : false
+  const body = content.length > 0 ? content : "…"
 
   if (alive) {
     // Detect stalled writes (no file mtime change for `timeoutSeconds`).
@@ -162,27 +157,27 @@ function run(argv) {
       deleteFile(streamFile)
       deleteFile(pidFile)
       return JSON.stringify({
-        response: `${content}\n\n[Connection stalled]`,
+        response: `${header}${content}\n\n[Connection stalled]`,
         footer: "codex did not produce output in time",
-        behaviour: { response: "replacelast", scroll: "end" }
+        behaviour: { response: "replace", scroll: "end" }
       })
     }
 
     return JSON.stringify({
       rerun: 0.1,
       variables: { streaming_now: "1" },
-      response: content,
-      behaviour: { response: "replacelast", scroll: "end" }
+      response: `${header}${body}`,
+      behaviour: { response: "replace", scroll: "end" }
     })
   }
 
   // Process exited: read the final content and clean up.
-  const finalText = content.length > 0 ? content : "[No response]"
+  const finalBody = content.length > 0 ? content : "[No response]"
   if (fileExists(streamFile)) deleteFile(streamFile)
   if (fileExists(pidFile)) deleteFile(pidFile)
 
   return JSON.stringify({
-    response: finalText,
-    behaviour: { response: "replacelast", scroll: "end" }
+    response: `${header}${finalBody}`,
+    behaviour: { response: "replace", scroll: "end" }
   })
 }
