@@ -59,6 +59,15 @@ All settings live in the workflow's **Configuration** sheet:
   `company.thebrowser.Browser` (Arc). Leave blank to skip.
 - **ChatGPT Base URL** — defaults to `https://chatgpt.com/`. Override if you
   use a custom host.
+- **Open iTerm Floating Window (gt)** *(optional)* — when enabled, the terminal
+  command generator simulates <kbd>⇧</kbd><kbd>Esc</kbd> just before Alfred
+  pastes, popping iTerm's floating hotkey window so the command lands there
+  instead of whatever app was previously frontmost. Configure the matching
+  hotkey under *iTerm → Settings → Keys → Hotkey → Show/hide all windows with a
+  system-wide hotkey* (set it to <kbd>⇧</kbd><kbd>Esc</kbd>).
+- **iTerm Floating Window Delay (s)** — seconds to wait after triggering the
+  hotkey before pasting. Defaults to `0.18`. Bump up if the floating window
+  animation is slow on your machine.
 
 ## How each mode works
 
@@ -102,6 +111,12 @@ that forbids prose and code fences, then post-processes the output to strip
 any stray fences or `$`/`sh ` prefixes. The clipboard output node is set to
 **transient** + **auto-paste**, so the command lands at your terminal cursor
 and isn't kept on the clipboard afterward.
+
+If **Open iTerm Floating Window (gt)** is enabled, the script also fires
+<kbd>⇧</kbd><kbd>Esc</kbd> via System Events (`key code 53 using {shift down}`)
+and sleeps for `iterm_floating_delay_sec` seconds before returning, giving
+iTerm's hotkey window time to come forward and grab focus before Alfred's
+auto-paste lands.
 
 ## Repository layout
 
