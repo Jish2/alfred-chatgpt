@@ -579,6 +579,44 @@ Rules:
 			<key>variable</key>
 			<string>chatgpt_base_url</string>
 		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<false/>
+				<key>label</key>
+				<string>Pop iTerm floating window before pasting</string>
+			</dict>
+			<key>description</key>
+			<string>Before pasting the generated command, simulate Shift+Esc to toggle iTerm's floating hotkey window. Configure the matching hotkey in iTerm → Settings → Keys → Hotkey (or change `iterm_floating_delay_sec` if the window needs more time to appear).</string>
+			<key>label</key>
+			<string>Open iTerm Floating Window (gt)</string>
+			<key>type</key>
+			<string>checkbox</string>
+			<key>variable</key>
+			<string>open_iterm_floating</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>0.18</string>
+				<key>placeholder</key>
+				<string>0.18</string>
+				<key>required</key>
+				<false/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>Seconds to wait after triggering the iTerm floating-window hotkey before Alfred pastes. Increase if the window animation is slow.</string>
+			<key>label</key>
+			<string>iTerm Floating Window Delay (s)</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>iterm_floating_delay_sec</string>
+		</dict>
 	</array>
 	<key>variablesdontexport</key>
 	<array>

@@ -52,4 +52,13 @@ OUT="${OUT#bash }"
 # Trim trailing whitespace / newlines.
 OUT="$(printf '%s' "$OUT" | sed -e 's/[[:space:]]*$//')"
 
+# Optionally pop open iTerm's floating hotkey window before Alfred pastes.
+# Triggered by the user-configured global hotkey (default Shift+Esc, key code 53).
+case "${open_iterm_floating:-0}" in
+  1|true|yes|on)
+    /usr/bin/osascript -e 'tell application "System Events" to key code 53 using {shift down}' >/dev/null 2>&1 || true
+    /bin/sleep "${iterm_floating_delay_sec:-0.18}"
+    ;;
+esac
+
 printf '%s' "$OUT"
