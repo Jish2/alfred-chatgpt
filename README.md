@@ -133,5 +133,7 @@ Workflow/
 
 ## License
 
-Original workflow scaffolding © Vítor Galvão / Alfred App, MIT licensed (see
-[`LICENSE`](LICENSE)). New scripts and `info.plist` are also MIT.
+Original workflow scaffolding © 2024 Running with Crayons Ltd (Alfred App),
+BSD 3-Clause licensed (see [`LICENSE`](LICENSE)). Modifications and new
+scripts in this fork are © 2026 jgoon and released under the same BSD
+3-Clause license.
