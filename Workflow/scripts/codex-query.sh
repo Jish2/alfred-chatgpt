@@ -78,11 +78,15 @@ resolve_codex() {
 
   command -v zsh >/dev/null 2>&1 || return 1
 
-  # Run an interactive zsh so ~/.zshrc is sourced. Print a single prefixed line
-  # we can grep out of any noisy startup output (p10k, motd, etc.).
-  local probe resolved
+  # Run an interactive zsh so ~/.zshrc is sourced. Print prefixed lines we can
+  # grep out of any noisy startup output (p10k, motd, etc.). We export both the
+  # codex resolution and zsh's PATH so binaries referenced by an alias body
+  # (e.g. `alias codex='CODEX_HOME=… brodex'` where `brodex` lives somewhere
+  # only zsh knows about) become reachable from this bash process.
+  local probe probe_out
   probe='
     emulate -L zsh
+    print -r -- "__CODEX_RESOLVE__PATHENV:$PATH"
     if (( ${+aliases[codex]} )); then
       print -r -- "__CODEX_RESOLVE__ALIAS:${aliases[codex]}"
     elif (( ${+functions[codex]} )); then
@@ -91,8 +95,22 @@ resolve_codex() {
       print -r -- "__CODEX_RESOLVE__PATH:$(whence -p codex)"
     fi
   '
-  resolved="$(zsh -ic "$probe" 2>/dev/null \
-    | grep '^__CODEX_RESOLVE__' \
+  probe_out="$(zsh -ic "$probe" 2>/dev/null | grep '^__CODEX_RESOLVE__')"
+
+  # Merge zsh's PATH so any binaries referenced by the alias body resolve.
+  local zsh_path
+  zsh_path="$(printf '%s\n' "$probe_out" \
+    | grep '^__CODEX_RESOLVE__PATHENV:' \
+    | tail -n 1)"
+  zsh_path="${zsh_path#__CODEX_RESOLVE__PATHENV:}"
+  if [[ -n "$zsh_path" ]]; then
+    PATH="${PATH}:${zsh_path}"
+    export PATH
+  fi
+
+  local resolved
+  resolved="$(printf '%s\n' "$probe_out" \
+    | grep -E '^__CODEX_RESOLVE__(ALIAS|FUNC|PATH):' \
     | tail -n 1)"
   resolved="${resolved#__CODEX_RESOLVE__}"
 
@@ -148,14 +166,17 @@ PAYLOAD="$(
     + (if $effort == "" then {} else { reasoning: { effort: $effort } } end)'
 )"
 
+# Use `env` so any leading `VAR=value` words coming from a zsh alias
+# (e.g. `alias codex='CODEX_HOME=/path brodex'`) are applied as env
+# assignments instead of being treated as the command name.
 if [[ "$RAW" -eq 1 ]]; then
-  printf '%s' "$PAYLOAD" | "${CODEX_CMD[@]}" responses
+  printf '%s' "$PAYLOAD" | env "${CODEX_CMD[@]}" responses
   exit "${PIPESTATUS[1]}"
 fi
 
 set +e
 printf '%s' "$PAYLOAD" \
-  | "${CODEX_CMD[@]}" responses \
+  | env "${CODEX_CMD[@]}" responses \
   | jq -j --unbuffered '
       if .type == "response.output_text.delta" then .delta
       elif .type == "response.completed"       then ""
