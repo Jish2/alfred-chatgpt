@@ -69,9 +69,6 @@ tail -r "$file" 2>/dev/null \
                 arg: $body,
                 match: ($q1 + " " + $r1),
                 text: { copy: $r, largetype: $r },
-                mods: {
-                  cmd: { subtitle: "⌘↩ Copy answer to clipboard", arg: $r, valid: true }
-                },
                 valid: true
               }
           )
