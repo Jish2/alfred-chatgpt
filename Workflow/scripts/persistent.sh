@@ -47,6 +47,20 @@ is_alfred_frontmost() {
   esac
 }
 
+# Force-dismiss the Alfred window by sending Escape directly to the Alfred
+# process. Targeting the process (rather than "the frontmost app") means we
+# only ever dismiss Alfred — never another app that may have grabbed focus
+# in the meantime. Safe to call even if Alfred's window is already closed.
+dismiss_alfred_window() {
+  /usr/bin/osascript <<'APPLESCRIPT' >/dev/null 2>&1 || true
+tell application "System Events"
+  if exists (process "Alfred") then
+    tell process "Alfred" to key code 53
+  end if
+end tell
+APPLESCRIPT
+}
+
 # Poll until Alfred is no longer frontmost, or until the timeout expires.
 # Returns 0 if Alfred dismissed in time, 1 if it did not.
 wait_for_alfred_dismiss() {
@@ -69,6 +83,14 @@ ENCODED="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.ar
 # Strip a single trailing slash so we can safely append `?prompt=`.
 TRIMMED="${BASE_URL%/}"
 URL="${TRIMMED}/?prompt=${ENCODED}"
+
+# Proactively close the Alfred window before doing anything else. Alfred
+# *usually* dismisses itself once a Run Script action fires, but on slower
+# systems (or when focus is mid-transition) the window can linger. Sending
+# Escape directly to the Alfred process guarantees the bar disappears as
+# soon as Return is pressed on `gg`, and avoids the wait-then-abort path
+# below that would otherwise leave the user staring at a stuck Alfred bar.
+dismiss_alfred_window
 
 # Open in the user's default browser.
 /usr/bin/open "$URL"
