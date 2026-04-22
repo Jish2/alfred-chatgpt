@@ -60,6 +60,29 @@
 				<false/>
 			</dict>
 		</array>
+		<key>44444444-4444-4444-4444-444444444441</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>44444444-4444-4444-4444-444444444442</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>22222222-2222-2222-2222-222222222222</string>
+				<key>modifiers</key>
+				<integer>1048576</integer>
+				<key>modifiersubtext</key>
+				<string>Copy answer</string>
+				<key>vitoclose</key>
+				<true/>
+			</dict>
+		</array>
 	</dict>
 	<key>createdby</key>
 	<string>jgoon</string>
@@ -266,6 +289,90 @@
 			<key>version</key>
 			<integer>3</integer>
 		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<true/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttreatemptyqueryasnil</key>
+				<false/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>1</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>{var:history_keyword}</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<true/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>1</integer>
+				<key>runningsubtext</key>
+				<string>Loading history…</string>
+				<key>script</key>
+				<string></string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string>scripts/history-filter.sh</string>
+				<key>skipuniversalaction</key>
+				<true/>
+				<key>subtext</key>
+				<string>Browse saved ephemeral answers · ↩ View · ⌘↩ Copy answer</string>
+				<key>title</key>
+				<string>Ephemeral chat history</string>
+				<key>type</key>
+				<integer>8</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>44444444-4444-4444-4444-444444444441</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>behaviour</key>
+				<integer>2</integer>
+				<key>fontmode</key>
+				<integer>0</integer>
+				<key>fontsizing</key>
+				<integer>0</integer>
+				<key>footertext</key>
+				<string>Ephemeral history · ↩ Close · ⌘C Copy answer · Esc Close</string>
+				<key>inputfile</key>
+				<string>scripts/history-view.sh</string>
+				<key>inputtype</key>
+				<integer>1</integer>
+				<key>loadingtext</key>
+				<string>Loading saved answer…</string>
+				<key>outputmode</key>
+				<integer>1</integer>
+				<key>scriptinput</key>
+				<integer>2</integer>
+				<key>spellchecking</key>
+				<integer>0</integer>
+				<key>stackview</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.userinterface.text</string>
+			<key>uid</key>
+			<string>44444444-4444-4444-4444-444444444442</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
 	</array>
 	<key>readme</key>
 	<string>Three ChatGPT prompt modes powered by the local `codex` CLI (uses your ChatGPT subscription via the OpenAI Responses API — no API key required).
@@ -339,6 +446,24 @@ Requirements: `codex` (ChatGPT-CLI) and `jq` available on PATH (Homebrew default
 			<key>ypos</key>
 			<real>420</real>
 		</dict>
+		<key>44444444-4444-4444-4444-444444444441</key>
+		<dict>
+			<key>colorindex</key>
+			<integer>2</integer>
+			<key>note</key>
+			<string>Ephemeral history browser (Script Filter → Text View)</string>
+			<key>xpos</key>
+			<real>60</real>
+			<key>ypos</key>
+			<real>600</real>
+		</dict>
+		<key>44444444-4444-4444-4444-444444444442</key>
+		<dict>
+			<key>xpos</key>
+			<real>360</real>
+			<key>ypos</key>
+			<real>600</real>
+		</dict>
 	</dict>
 	<key>userconfigurationconfig</key>
 	<array>
@@ -404,6 +529,65 @@ Requirements: `codex` (ChatGPT-CLI) and `jq` available on PATH (Homebrew default
 			<string>textfield</string>
 			<key>variable</key>
 			<string>terminal_keyword</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>gh</string>
+				<key>placeholder</key>
+				<string>gh</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>Keyword for browsing saved ephemeral chat history.</string>
+			<key>label</key>
+			<string>History Keyword</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>history_keyword</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<true/>
+				<key>label</key>
+				<string>Save ephemeral Q&amp;A pairs to local history</string>
+			</dict>
+			<key>description</key>
+			<string>When enabled, every completed ephemeral answer is appended to a JSON-lines file in the workflow's data dir and is browsable via the History Keyword. Disable to keep ephemeral mode truly ephemeral.</string>
+			<key>label</key>
+			<string>Enable Ephemeral History</string>
+			<key>type</key>
+			<string>checkbox</string>
+			<key>variable</key>
+			<string>history_enabled</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>200</string>
+				<key>placeholder</key>
+				<string>200</string>
+				<key>required</key>
+				<false/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>Maximum number of ephemeral history entries to retain. Older entries are pruned in FIFO order. Set to 0 to keep everything.</string>
+			<key>label</key>
+			<string>History Max Entries</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>history_max_entries</string>
 		</dict>
 		<dict>
 			<key>config</key>

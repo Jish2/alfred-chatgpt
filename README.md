@@ -1,20 +1,21 @@
 # <img src='Workflow/icon.png' width='45' align='center' alt='icon'> Alfred ChatGPT (codex)
 
-Three lightweight ChatGPT prompt modes for Alfred, all powered by the local
+Four lightweight ChatGPT modes for Alfred, all powered by the local
 [`codex`](https://github.com/openai/codex) CLI. Uses your **ChatGPT
 subscription** through the OpenAI Responses API — **no API key required**.
 
 > Forked from [`alfredapp/openai-workflow`](https://github.com/alfredapp/openai-workflow).
 > The original API-key + chat-history + DALL·E machinery has been removed in
-> favor of three focused modes wired through `codex`.
+> favor of focused modes wired through `codex`.
 
 ## Modes
 
 | Keyword (default) | Mode | Behavior |
 |---|---|---|
-| `g  <query>` | **Ephemeral** | Streams a one-shot answer into Alfred's text view. Nothing is saved. |
+| `g  <query>` | **Ephemeral** | Streams a one-shot answer into Alfred's text view. The completed Q&A is also appended to a local history file (toggleable). |
 | `gg <query>` | **Persistent** | Opens [`chatgpt.com/?prompt=…`](https://chatgpt.com/) and auto-presses Return so the prompt is sent in your real ChatGPT conversation history. |
 | `gt <query>` | **Terminal command** | Generates a single shell command and pastes it at the cursor of your frontmost terminal — like Cursor's <kbd>⌘</kbd><kbd>K</kbd>. |
+| `gh [query]` | **History** | Browse past ephemeral Q&A pairs. Fuzzy-search by question or answer; <kbd>↩</kbd> opens the saved markdown in a Text View, <kbd>⌘</kbd><kbd>↩</kbd> copies just the answer. |
 
 ## Requirements
 
@@ -42,7 +43,12 @@ Alfred will import the bundle and surface the configurable variables under
 
 All settings live in the workflow's **Configuration** sheet:
 
-- **Ephemeral / Persistent / Terminal Keyword** — defaults `g`, `gg`, `gt`.
+- **Ephemeral / Persistent / Terminal / History Keyword** — defaults `g`, `gg`, `gt`, `gh`.
+- **Enable Ephemeral History** — when on (default), every completed ephemeral
+  answer is appended to `$alfred_workflow_data/ephemeral-history.jsonl`. Turn
+  it off to keep ephemeral truly ephemeral.
+- **History Max Entries** — defaults to `200`. Older entries are pruned in
+  FIFO order. Set `0` to keep everything (and manage the file yourself).
 - **Codex Model** — passed straight to `codex responses`. Defaults to
   `gpt-5.4-mini`. Examples: `gpt-5.4-mini`, `gpt-5.4`, `gpt-5.2`,
   `gpt-5.2-mini`, `gpt-4o`, `o3`. Whatever `codex` lets you query is fair game.
@@ -100,7 +106,33 @@ Keyword (gg <query>) ──► Run Script (open URL + ⏎)
 > time, since simulating Return counts as a synthetic event. Grant it under
 > *System Settings → Privacy & Security → Accessibility*.
 
-### 3. Terminal command (`gt`)
+### 3. History (`gh`)
+
+```
+Script Filter (gh [query]) ──► Text View
+```
+
+`scripts/history-filter.sh` reads
+`$alfred_workflow_data/ephemeral-history.jsonl` (newest line last, written by
+`scripts/history-record.sh`), reverses it so the most recent answer is on
+top, and emits one Alfred item per Q&A pair. Alfred fuzzy-matches your typed
+text against the question + answer (`alfredfiltersresults: true`).
+
+Selecting an item forwards a pre-rendered markdown body via `arg` to
+`scripts/history-view.sh`, which echoes it back into the Text View. ⌘↩ on a
+result copies just the answer; ⌘L pops it in Large Type via the `text`
+field.
+
+History is appended automatically by `scripts/ephemeral.sh` once the
+streaming `codex` process exits cleanly. Disable via the **Enable Ephemeral
+History** checkbox if you prefer the old "nothing is saved" behaviour. To
+nuke the history manually:
+
+```sh
+rm -f "$(osascript -e 'tell application "Alfred" to get path to workflow data folder for "com.jgoon.alfred-chatgpt"')/ephemeral-history.jsonl"
+```
+
+### 4. Terminal command (`gt`)
 
 ```
 Keyword (gt <query>) ──► Run Script ──► Copy to Clipboard (auto-paste)
@@ -129,6 +161,9 @@ Workflow/
     ├── ephemeral-filter.js    # JXA Script Filter (returns the items JSON)
     ├── ephemeral.sh           # bash Text View input (streams the answer; live polling)
     ├── ephemeral.js           # JXA Text View input (kept as reference fallback)
+    ├── history-record.sh      # appends completed ephemeral Q&A pairs to JSONL
+    ├── history-filter.sh      # Script Filter listing past ephemeral entries
+    ├── history-view.sh        # Text View input: renders a saved entry
     ├── persistent.sh          # opens chatgpt.com and auto-submits
     └── terminal-cmd.sh        # generates a single shell command
 ```

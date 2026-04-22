@@ -117,6 +117,16 @@ fi
 
 # Background streamer has exited: emit the final frame and clean up.
 final="${content:-[No response]}"
+
+# Record the completed Q&A pair to the workflow's persistent history file.
+# Best-effort: any failure is swallowed so it can't break the streaming UX.
+if [[ -n "$typed_query" && -n "$content" ]]; then
+  record_script="$script_dir/history-record.sh"
+  if [[ -x "$record_script" ]]; then
+    "$record_script" "$typed_query" "$stream_file" >/dev/null 2>&1 || true
+  fi
+fi
+
 rm -f "$stream_file" "$pid_file"
 jq -nc --arg resp "${header}${final}" '
   {
