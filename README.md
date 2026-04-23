@@ -12,11 +12,11 @@ subscription** through the OpenAI Responses API — **no API key required**.
 
 | Keyword (default) | Mode | Behavior |
 |---|---|---|
-| `g  <query>` | **Ephemeral** | Streams a one-shot answer into Alfred's text view. The completed Q&A is also appended to a local history file (toggleable). |
+| `g  <query>` | **Ephemeral** | Streams an answer into Alfred's text view. Type a follow-up into the text view's input to continue the same thread; press <kbd>Esc</kbd> and re-trigger `g` to start a fresh one. Each completed Q&A is also appended to a local history file (toggleable). |
 | `gg <query>` | **Persistent** | Opens [`chatgpt.com/?prompt=…`](https://chatgpt.com/) and auto-presses Return so the prompt is sent in your real ChatGPT conversation history. |
 | `gt <query>` | **Terminal command** | Generates a single shell command and pastes it at the cursor of your frontmost terminal — like Cursor's <kbd>⌘</kbd><kbd>K</kbd>. |
 | `gh [query]` | **History** | Browse past ephemeral Q&A pairs. Fuzzy-search by question or answer; <kbd>↩</kbd> opens the saved markdown in a Text View, <kbd>⌘</kbd><kbd>↩</kbd> copies just the answer. |
-| `gl` | **Last** | Reopen the most recent ephemeral chat in the Text View — a one-keystroke shortcut over `gh`. |
+| `gl` | **Last** | Reopen the entire most recent ephemeral thread in the Text View — type a follow-up into the input to continue it. One-keystroke shortcut over `gh`. |
 
 ## Requirements
 
@@ -84,10 +84,22 @@ All settings live in the workflow's **Configuration** sheet:
 Script Filter (g <query>) ──► Text View
 ```
 
-`scripts/ephemeral.js` (JXA) launches `scripts/codex-query.sh` as a background
-`NSTask`, streaming stdout into a temp file. Alfred's `rerun: 0.1` polls the
-file and appends new content to the text view, so you see tokens as they
-arrive. When the codex process exits, the workflow tears down the temp files.
+`scripts/ephemeral.sh` launches `scripts/codex-query.sh` as a background
+process, streaming stdout into a temp file. Alfred's `rerun: 0.1` polls the
+file and re-renders the conversation in the text view so you see tokens as
+they arrive. When the codex process exits, the workflow tears down the temp
+files. (`scripts/ephemeral.js` is a slower JXA-based reference fallback that
+shares the same on-disk state.)
+
+Follow-ups are real multi-turn conversations: the script keeps the running
+chat in `$alfred_workflow_cache/ephemeral-thread.json` (an array of
+`{role, content}` messages) and feeds the whole thread to `codex responses`
+via the `--messages-file` flag on every turn, so the assistant has full
+prior context. The active thread is identified by the `thread_id` workflow
+variable, which Alfred carries across the rerun loop *and* across the
+user typing the next follow-up into the text view's input. Pressing
+<kbd>Esc</kbd> and re-triggering `g` arrives without `thread_id` set, which
+resets the thread.
 
 ### 2. Persistent (`gg`)
 
@@ -139,10 +151,17 @@ rm -f "$(osascript -e 'tell application "Alfred" to get path to workflow data fo
 Keyword (gl) ──► Text View
 ```
 
-`scripts/last-view.sh` `tail -n 1`s
-`$alfred_workflow_data/ephemeral-history.jsonl` and renders that entry into
-the same Text View shell used by the history browser. The keyword takes no
-argument — it's a one-keystroke shortcut for "show me what I just asked".
+`scripts/last-view.sh` reopens the *entire* most recent ephemeral thread —
+not just the last Q&A pair — and lets you continue it by typing a follow-up
+into the text view's input. On the first invocation it bootstraps the cache
+thread file from `$alfred_workflow_data/last-thread.json` (a snapshot
+written by `ephemeral.sh` after every completed assistant turn), mints a
+fresh `thread_id`, then `exec`s `ephemeral.sh` so all rendering and
+streaming logic is shared with the `g` keyword. If no `last-thread.json`
+exists yet (e.g. you upgraded from the original single-turn behavior) it
+falls back to synthesizing a one-turn thread from the newest line of
+`ephemeral-history.jsonl` so you can still reopen and continue your most
+recent answer.
 
 ### 5. Terminal command (`gt`)
 
@@ -171,12 +190,12 @@ Workflow/
 └── scripts/
     ├── codex-query.sh         # shared `codex responses` wrapper (streams text)
     ├── ephemeral-filter.js    # JXA Script Filter (returns the items JSON)
-    ├── ephemeral.sh           # bash Text View input (streams the answer; live polling)
-    ├── ephemeral.js           # JXA Text View input (kept as reference fallback)
+    ├── ephemeral.sh           # bash Text View input (streams the answer; live polling, multi-turn threads)
+    ├── ephemeral.js           # JXA Text View input (slower reference fallback; same thread state)
     ├── history-record.sh      # appends completed ephemeral Q&A pairs to JSONL
     ├── history-filter.sh      # Script Filter listing past ephemeral entries
     ├── history-view.sh        # Text View input: renders a saved entry
-    ├── last-view.sh           # Text View input: renders the most recent entry (`gl`)
+    ├── last-view.sh           # Text View input: reopens the most recent thread (`gl`); delegates to ephemeral.sh for continuation
     ├── persistent.sh          # opens chatgpt.com and auto-submits
     └── terminal-cmd.sh        # generates a single shell command
 ```

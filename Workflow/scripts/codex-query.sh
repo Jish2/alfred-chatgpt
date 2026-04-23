@@ -11,6 +11,14 @@
 #
 # Flags:
 #   -q, --query     <text>   Prompt to send. If omitted, prompt is read from stdin.
+#       --messages-file <path>
+#                            Path to a JSON file containing the full conversation
+#                            as an array of `{role, content}` objects (the same
+#                            shape as the Responses API `input` field). When set,
+#                            takes precedence over -q/--query and stdin so the
+#                            caller can drive multi-turn threads (the ephemeral
+#                            mode uses this to continue the chat instead of
+#                            starting a new thread on every follow-up).
 #   -m, --model     <name>   Model name. Default: $CODEX_MODEL or gpt-5.4-mini.
 #   -s, --system    <text>   System / instructions. Default: $CODEX_SYSTEM or generic helper.
 #   -r, --reasoning <level>  Reasoning effort: minimal | low | medium | high.
@@ -24,10 +32,11 @@ set -euo pipefail
 PROG="$(basename "$0")"
 
 usage() {
-  sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 QUERY=""
+MESSAGES_FILE=""
 MODEL="${CODEX_MODEL:-gpt-5.4-mini}"
 SYSTEM="${CODEX_SYSTEM:-You are a helpful assistant. Be concise and direct.}"
 REASONING="${CODEX_REASONING:-}"
@@ -36,13 +45,14 @@ TRAILING_NEWLINE=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -q|--query)     QUERY="${2:-}"; shift 2 ;;
-    -m|--model)     MODEL="${2:-}"; shift 2 ;;
-    -s|--system)    SYSTEM="${2:-}"; shift 2 ;;
-    -r|--reasoning) REASONING="${2:-}"; shift 2 ;;
-    --raw)          RAW=1; shift ;;
-    --no-newline)   TRAILING_NEWLINE=0; shift ;;
-    -h|--help)      usage; exit 0 ;;
+    -q|--query)         QUERY="${2:-}"; shift 2 ;;
+    --messages-file)    MESSAGES_FILE="${2:-}"; shift 2 ;;
+    -m|--model)         MODEL="${2:-}"; shift 2 ;;
+    -s|--system)        SYSTEM="${2:-}"; shift 2 ;;
+    -r|--reasoning)     REASONING="${2:-}"; shift 2 ;;
+    --raw)              RAW=1; shift ;;
+    --no-newline)       TRAILING_NEWLINE=0; shift ;;
+    -h|--help)          usage; exit 0 ;;
     --) shift; break ;;
     -*) echo "$PROG: unknown flag: $1" >&2; usage >&2; exit 2 ;;
     *)
@@ -55,9 +65,17 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$QUERY" ]]; then
+# If a messages file was supplied it wins outright. Otherwise fall back to the
+# single-turn -q/stdin path (used by `terminal-cmd.sh` and any other one-shot
+# caller that doesn't care about conversation context).
+if [[ -n "$MESSAGES_FILE" ]]; then
+  if [[ ! -f "$MESSAGES_FILE" ]]; then
+    echo "$PROG: --messages-file: no such file: $MESSAGES_FILE" >&2
+    exit 2
+  fi
+elif [[ -z "$QUERY" ]]; then
   if [[ -t 0 ]]; then
-    echo "$PROG: no query provided. Use -q \"...\" or pipe text on stdin." >&2
+    echo "$PROG: no query provided. Use -q \"...\", --messages-file <path>, or pipe text on stdin." >&2
     exit 2
   fi
   QUERY="$(cat)"
@@ -150,21 +168,42 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 127
 fi
 
-PAYLOAD="$(
-  jq -n \
-    --arg model "$MODEL" \
-    --arg sys   "$SYSTEM" \
-    --arg user  "$QUERY" \
-    --arg effort "$REASONING" \
-    '{
-      model: $model,
-      stream: true,
-      store: false,
-      instructions: $sys,
-      input: [ { role: "user", content: $user } ]
-    }
-    + (if $effort == "" then {} else { reasoning: { effort: $effort } } end)'
-)"
+if [[ -n "$MESSAGES_FILE" ]]; then
+  # `--slurpfile` reads the whole JSON file into a one-element array, so
+  # `$msgs[0]` is the actual `[{role, content}, ...]` payload we want to
+  # forward to the Responses API verbatim.
+  PAYLOAD="$(
+    jq -n \
+      --arg model "$MODEL" \
+      --arg sys   "$SYSTEM" \
+      --slurpfile msgs "$MESSAGES_FILE" \
+      --arg effort "$REASONING" \
+      '{
+        model: $model,
+        stream: true,
+        store: false,
+        instructions: $sys,
+        input: $msgs[0]
+      }
+      + (if $effort == "" then {} else { reasoning: { effort: $effort } } end)'
+  )"
+else
+  PAYLOAD="$(
+    jq -n \
+      --arg model "$MODEL" \
+      --arg sys   "$SYSTEM" \
+      --arg user  "$QUERY" \
+      --arg effort "$REASONING" \
+      '{
+        model: $model,
+        stream: true,
+        store: false,
+        instructions: $sys,
+        input: [ { role: "user", content: $user } ]
+      }
+      + (if $effort == "" then {} else { reasoning: { effort: $effort } } end)'
+  )"
+fi
 
 # Use `env` so any leading `VAR=value` words coming from a zsh alias
 # (e.g. `alias codex='CODEX_HOME=/path brodex'`) are applied as env
