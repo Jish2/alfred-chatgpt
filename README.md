@@ -16,6 +16,7 @@ subscription** through the OpenAI Responses API — **no API key required**.
 | `gg <query>` | **Persistent** | Opens [`chatgpt.com/?prompt=…`](https://chatgpt.com/) and auto-presses Return so the prompt is sent in your real ChatGPT conversation history. |
 | `gt <query>` | **Terminal command** | Generates a single shell command and pastes it at the cursor of your frontmost terminal — like Cursor's <kbd>⌘</kbd><kbd>K</kbd>. |
 | `gh [query]` | **History** | Browse past ephemeral Q&A pairs. Fuzzy-search by question or answer; <kbd>↩</kbd> opens the saved markdown in a Text View, <kbd>⌘</kbd><kbd>↩</kbd> copies just the answer. |
+| `gl` | **Last** | Reopen the most recent ephemeral chat in the Text View — a one-keystroke shortcut over `gh`. |
 
 ## Requirements
 
@@ -43,7 +44,7 @@ Alfred will import the bundle and surface the configurable variables under
 
 All settings live in the workflow's **Configuration** sheet:
 
-- **Ephemeral / Persistent / Terminal / History Keyword** — defaults `g`, `gg`, `gt`, `gh`.
+- **Ephemeral / Persistent / Terminal / History / Last Keyword** — defaults `g`, `gg`, `gt`, `gh`, `gl`.
 - **Enable Ephemeral History** — when on (default), every completed ephemeral
   answer is appended to `$alfred_workflow_data/ephemeral-history.jsonl`. Turn
   it off to keep ephemeral truly ephemeral.
@@ -132,7 +133,18 @@ nuke the history manually:
 rm -f "$(osascript -e 'tell application "Alfred" to get path to workflow data folder for "com.jgoon.alfred-chatgpt"')/ephemeral-history.jsonl"
 ```
 
-### 4. Terminal command (`gt`)
+### 4. Last (`gl`)
+
+```
+Keyword (gl) ──► Text View
+```
+
+`scripts/last-view.sh` `tail -n 1`s
+`$alfred_workflow_data/ephemeral-history.jsonl` and renders that entry into
+the same Text View shell used by the history browser. The keyword takes no
+argument — it's a one-keystroke shortcut for "show me what I just asked".
+
+### 5. Terminal command (`gt`)
 
 ```
 Keyword (gt <query>) ──► Run Script ──► Copy to Clipboard (auto-paste)
@@ -164,6 +176,7 @@ Workflow/
     ├── history-record.sh      # appends completed ephemeral Q&A pairs to JSONL
     ├── history-filter.sh      # Script Filter listing past ephemeral entries
     ├── history-view.sh        # Text View input: renders a saved entry
+    ├── last-view.sh           # Text View input: renders the most recent entry (`gl`)
     ├── persistent.sh          # opens chatgpt.com and auto-submits
     └── terminal-cmd.sh        # generates a single shell command
 ```
