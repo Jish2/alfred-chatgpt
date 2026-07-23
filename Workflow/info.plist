@@ -100,11 +100,11 @@
 	<key>createdby</key>
 	<string>jgoon</string>
 	<key>description</key>
-	<string>ChatGPT prompts via the local `codex` CLI: ephemeral lookup, persistent (chatgpt.com), and terminal-command generator.</string>
+	<string>ChatGPT prompts via Codex CLI or LLM Gateway: ephemeral lookup, persistent (chatgpt.com), and terminal-command generator.</string>
 	<key>disabled</key>
 	<false/>
 	<key>name</key>
-	<string>Alfred ChatGPT (codex)</string>
+	<string>Alfred ChatGPT</string>
 	<key>objects</key>
 	<array>
 		<dict>
@@ -174,7 +174,7 @@
 				<key>inputtype</key>
 				<integer>1</integer>
 				<key>loadingtext</key>
-				<string>Querying ChatGPT via codex…</string>
+				<string>Querying ChatGPT…</string>
 				<key>outputmode</key>
 				<integer>1</integer>
 				<key>scriptinput</key>
@@ -444,13 +444,15 @@
 		</dict>
 	</array>
 	<key>readme</key>
-	<string>Three ChatGPT prompt modes powered by the local `codex` CLI (uses your ChatGPT subscription via the OpenAI Responses API — no API key required).
+	<string>Five ChatGPT prompt modes powered by Codex CLI or LLM Gateway.
 
 • `g  &lt;query&gt;`  Ephemeral one-shot answer in Alfred. Not saved.
 • `gg &lt;query&gt;`  Persistent: opens chatgpt.com with your prompt and auto-submits.
 • `gt &lt;query&gt;`  Generate a shell command and paste it into the frontmost terminal.
+• `gh [query]`  Browse saved ephemeral answers.
+• `gl`  Reopen the most recent ephemeral answer.
 
-Requirements: `codex` (ChatGPT-CLI) and `jq` available on PATH (Homebrew default `/opt/homebrew/bin` is added automatically).
+Requirements: `jq` available on PATH. Select the Codex or LLM Gateway provider in Workflow Configuration.
 </string>
 	<key>uidata</key>
 	<dict>
@@ -717,6 +719,89 @@ Requirements: `codex` (ChatGPT-CLI) and `jq` available on PATH (Homebrew default
 			<string>textfield</string>
 			<key>variable</key>
 			<string>codex_model</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>codex</string>
+				<key>pairs</key>
+				<array>
+					<array>
+						<string>Codex CLI</string>
+						<string>codex</string>
+					</array>
+					<array>
+						<string>LLM Gateway</string>
+						<string>gateway</string>
+					</array>
+				</array>
+			</dict>
+			<key>description</key>
+			<string>Inference backend used by ephemeral and terminal modes.</string>
+			<key>label</key>
+			<string>Inference Provider</string>
+			<key>type</key>
+			<string>popupbutton</string>
+			<key>variable</key>
+			<string>llm_provider</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>https://apis.sitetest3.simulpong.com/llm-gateway</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>Base URL for LLM Gateway. Sitetest3 is the default; use the production URL when appropriate.</string>
+			<key>label</key>
+			<string>LLM Gateway URL</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>llm_gateway_url</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>rbx.st3.llm-gateway</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>SAPI audience used to issue the LLM Gateway LCA token. Sitetest3 defaults to rbx.st3.llm-gateway.</string>
+			<key>label</key>
+			<string>LLM Gateway SAPI Audience</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>llm_gateway_audience</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>gpt-5.6-luna</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>Model sent to LLM Gateway when the Gateway provider is selected.</string>
+			<key>label</key>
+			<string>LLM Gateway Model</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>llm_gateway_model</string>
 		</dict>
 		<dict>
 			<key>config</key>
