@@ -100,11 +100,11 @@
 	<key>createdby</key>
 	<string>jgoon</string>
 	<key>description</key>
-	<string>ChatGPT prompts via the local `codex` CLI: ephemeral lookup, persistent (chatgpt.com), and terminal-command generator.</string>
+	<string>ChatGPT prompts via Cursor CLI: ephemeral lookup, persistent (chatgpt.com), and terminal-command generator.</string>
 	<key>disabled</key>
 	<false/>
 	<key>name</key>
-	<string>Alfred ChatGPT (codex)</string>
+	<string>Alfred ChatGPT (Cursor)</string>
 	<key>objects</key>
 	<array>
 		<dict>
@@ -174,7 +174,7 @@
 				<key>inputtype</key>
 				<integer>1</integer>
 				<key>loadingtext</key>
-				<string>Querying ChatGPT via codex…</string>
+				<string>Querying ChatGPT via Cursor…</string>
 				<key>outputmode</key>
 				<integer>1</integer>
 				<key>scriptinput</key>
@@ -444,13 +444,13 @@
 		</dict>
 	</array>
 	<key>readme</key>
-	<string>Three ChatGPT prompt modes powered by the local `codex` CLI (uses your ChatGPT subscription via the OpenAI Responses API — no API key required).
+	<string>ChatGPT prompt modes powered by Cursor CLI (uses your Cursor login — no separate API key required).
 
 • `g  &lt;query&gt;`  Ephemeral one-shot answer in Alfred. Not saved.
 • `gg &lt;query&gt;`  Persistent: opens chatgpt.com with your prompt and auto-submits.
 • `gt &lt;query&gt;`  Generate a shell command and paste it into the frontmost terminal.
 
-Requirements: `codex` (ChatGPT-CLI) and `jq` available on PATH (Homebrew default `/opt/homebrew/bin` is added automatically).
+Requirements: Cursor CLI (`agent` or `cursor-agent`) and `jq` available on PATH. Run `agent login` first.
 </string>
 	<key>uidata</key>
 	<dict>
@@ -701,60 +701,22 @@ Requirements: `codex` (ChatGPT-CLI) and `jq` available on PATH (Homebrew default
 			<key>config</key>
 			<dict>
 				<key>default</key>
-				<string>gpt-5.4-mini</string>
+				<string>gpt-5.6-luna-medium</string>
 				<key>placeholder</key>
-				<string>gpt-5.4-mini</string>
+				<string>gpt-5.6-luna-medium</string>
 				<key>required</key>
 				<true/>
 				<key>trim</key>
 				<true/>
 			</dict>
 			<key>description</key>
-			<string>Model passed to `codex responses`. Examples: gpt-5.4-mini, gpt-5.4, gpt-5.2, gpt-5.2-mini, gpt-4o.</string>
+			<string>Model ID passed to Cursor CLI. Defaults to GPT-5.6 Luna at medium effort. The shorthand gpt-5.6-luna also maps to this variant.</string>
 			<key>label</key>
-			<string>Codex Model</string>
+			<string>Cursor Model</string>
 			<key>type</key>
 			<string>textfield</string>
 			<key>variable</key>
-			<string>codex_model</string>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>default</key>
-				<string>low</string>
-				<key>pairs</key>
-				<array>
-					<array>
-						<string>None (model default)</string>
-						<string></string>
-					</array>
-					<array>
-						<string>Low</string>
-						<string>low</string>
-					</array>
-					<array>
-						<string>Medium</string>
-						<string>medium</string>
-					</array>
-					<array>
-						<string>High</string>
-						<string>high</string>
-					</array>
-					<array>
-						<string>X-High</string>
-						<string>xhigh</string>
-					</array>
-				</array>
-			</dict>
-			<key>description</key>
-			<string>Reasoning effort for ephemeral and (default) terminal modes. Lower = faster.</string>
-			<key>label</key>
-			<string>Reasoning Effort</string>
-			<key>type</key>
-			<string>popupbutton</string>
-			<key>variable</key>
-			<string>codex_reasoning</string>
+			<string>cursor_model</string>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -775,7 +737,7 @@ Requirements: `codex` (ChatGPT-CLI) and `jq` available on PATH (Homebrew default
 			<key>type</key>
 			<string>textarea</string>
 			<key>variable</key>
-			<string>codex_system_ephemeral</string>
+			<string>cursor_system_ephemeral</string>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -802,7 +764,7 @@ Rules:
 			<key>type</key>
 			<string>textarea</string>
 			<key>variable</key>
-			<string>codex_system_terminal</string>
+			<string>cursor_system_terminal</string>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -915,7 +877,7 @@ Rules:
 		<string>streaming_now</string>
 	</array>
 	<key>version</key>
-	<string>0.1.0</string>
+	<string>0.2.0</string>
 	<key>webaddress</key>
 	<string>https://github.com/Jish2/alfred-chatgpt</string>
 </dict>

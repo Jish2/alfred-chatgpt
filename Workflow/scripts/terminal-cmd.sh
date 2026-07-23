@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Generate a single shell command from a natural-language description, using
-# the local `codex` CLI. The output is meant to be pasted at the cursor of the
+# Cursor CLI. The output is meant to be pasted at the cursor of the
 # frontmost terminal (Alfred's "Copy to Clipboard" action with auto-paste).
 #
 # Output contract: ONLY the command, on a single line, no fences, no prose.
@@ -29,15 +29,13 @@ Rules:
 - If the request is ambiguous, pick the most common interpretation; do not ask
   clarifying questions.'
 
-SYSTEM_PROMPT="${codex_system_terminal:-$DEFAULT_SYSTEM}"
-MODEL="${codex_model:-gpt-5.4-mini}"
-REASONING="${codex_reasoning_terminal:-${codex_reasoning:-low}}"
+SYSTEM_PROMPT="${cursor_system_terminal:-${codex_system_terminal:-$DEFAULT_SYSTEM}}"
+MODEL="${cursor_model:-${codex_model:-gpt-5.6-luna-medium}}"
 
 OUT="$(
-  CODEX_MODEL="$MODEL" \
-  CODEX_REASONING="$REASONING" \
-  CODEX_SYSTEM="$SYSTEM_PROMPT" \
-  "$SCRIPT_DIR/codex-query.sh" --no-newline -q "$QUERY"
+  CURSOR_MODEL="$MODEL" \
+  CURSOR_SYSTEM="$SYSTEM_PROMPT" \
+  "$SCRIPT_DIR/cursor-query.sh" --no-newline -q "$QUERY"
 )"
 
 # Defensive cleanup in case the model still wraps the output in a fence or

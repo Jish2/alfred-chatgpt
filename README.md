@@ -1,34 +1,35 @@
-# <img src='Workflow/icon.png' width='45' align='center' alt='icon'> Alfred ChatGPT (codex)
+# <img src='Workflow/icon.png' width='45' align='center' alt='icon'> Alfred ChatGPT (Cursor)
 
-Four lightweight ChatGPT modes for Alfred, all powered by the local
-[`codex`](https://github.com/openai/codex) CLI. Uses your **ChatGPT
-subscription** through the OpenAI Responses API — **no API key required**.
+Five lightweight ChatGPT modes for Alfred. Ephemeral answers and terminal
+commands run through [Cursor CLI](https://cursor.com/docs/cli) using your
+existing Cursor login, so no separate API key is required.
 
 > Forked from [`alfredapp/openai-workflow`](https://github.com/alfredapp/openai-workflow).
 > The original API-key + chat-history + DALL·E machinery has been removed in
-> favor of focused modes wired through `codex`.
+> favor of focused Alfred modes.
 
 ## Modes
 
 | Keyword (default) | Mode | Behavior |
 |---|---|---|
-| `g  <query>` | **Ephemeral** | Streams a one-shot answer into Alfred's text view. The completed Q&A is also appended to a local history file (toggleable). |
+| `g  <query>` | **Ephemeral** | Streams an answer into Alfred's text view. Type a follow-up into the text view's input to continue the same thread; press <kbd>Esc</kbd> and re-trigger `g` to start a fresh one. Each completed Q&A is also appended to a local history file (toggleable). |
 | `gg <query>` | **Persistent** | Opens [`chatgpt.com/?prompt=…`](https://chatgpt.com/) and auto-presses Return so the prompt is sent in your real ChatGPT conversation history. |
 | `gt <query>` | **Terminal command** | Generates a single shell command and pastes it at the cursor of your frontmost terminal — like Cursor's <kbd>⌘</kbd><kbd>K</kbd>. |
 | `gh [query]` | **History** | Browse past ephemeral Q&A pairs. Fuzzy-search by question or answer; <kbd>↩</kbd> opens the saved markdown in a Text View, <kbd>⌘</kbd><kbd>↩</kbd> copies just the answer. |
-| `gl` | **Last** | Reopen the most recent ephemeral chat in the Text View — a one-keystroke shortcut over `gh`. |
+| `gl` | **Last** | Reopen the entire most recent ephemeral thread in the Text View — type a follow-up into the input to continue it. One-keystroke shortcut over `gh`. |
 
 ## Requirements
 
 1. **macOS Alfred** with the Powerpack.
-2. [`codex`](https://github.com/openai/codex) CLI on `PATH`, signed in to your
-   ChatGPT account (`codex login`). Tested with `codex-cli` ≥ 0.122.
+2. Cursor CLI (`agent` or `cursor-agent`) on `PATH`, signed in to your Cursor
+   account (`agent login`).
 3. `jq` and `python3`. Both ship with macOS / Homebrew defaults; the workflow
-   adds `/opt/homebrew/bin` to `PATH` automatically when launched from Alfred.
+   adds common Homebrew and Cursor CLI locations to `PATH` when launched from
+   Alfred.
 
-The workflow shells out to `codex responses` (the raw Responses API), bypassing
-the Codex agent loop entirely — no shell, `apply_patch`, or MCP. It's just an
-LLM call.
+The workflow shells out to `agent -p --mode ask`. Cursor CLI does not expose a
+raw inference endpoint; Ask mode is the closest non-interactive replacement
+and keeps the invocation read-only.
 
 ## Install
 
@@ -50,11 +51,10 @@ All settings live in the workflow's **Configuration** sheet:
   it off to keep ephemeral truly ephemeral.
 - **History Max Entries** — defaults to `200`. Older entries are pruned in
   FIFO order. Set `0` to keep everything (and manage the file yourself).
-- **Codex Model** — passed straight to `codex responses`. Defaults to
-  `gpt-5.4-mini`. Examples: `gpt-5.4-mini`, `gpt-5.4`, `gpt-5.2`,
-  `gpt-5.2-mini`, `gpt-4o`, `o3`. Whatever `codex` lets you query is fair game.
-- **Reasoning Effort** — `none` / `low` / `medium` / `high` / `xhigh`. Lower is
-  faster. Note: `gpt-5.2` does **not** accept `minimal`.
+- **Cursor Model** — passed to Cursor CLI. Defaults to
+  `gpt-5.6-luna-medium`. Cursor exposes reasoning levels as separate model IDs;
+  run `agent --list-models` to see the IDs available to your account. The
+  shorthand `gpt-5.6-luna` maps to the medium variant.
 - **Ephemeral System Prompt** — instructions for the ephemeral mode. Default
   asks for short, direct answers.
 - **Terminal System Prompt** — strict instructions to emit a single shell
@@ -84,10 +84,26 @@ All settings live in the workflow's **Configuration** sheet:
 Script Filter (g <query>) ──► Text View
 ```
 
-`scripts/ephemeral.js` (JXA) launches `scripts/codex-query.sh` as a background
-`NSTask`, streaming stdout into a temp file. Alfred's `rerun: 0.1` polls the
-file and appends new content to the text view, so you see tokens as they
-arrive. When the codex process exits, the workflow tears down the temp files.
+`scripts/ephemeral.sh` launches `scripts/cursor-query.sh` as a background
+process, streaming stdout into a temp file. Alfred's `rerun: 0.1` polls the
+file and re-renders the conversation in the text view so you see tokens as
+they arrive. When Cursor CLI exits, the workflow tears down the temp
+files. (`scripts/ephemeral.js` is a slower JXA-based reference fallback that
+shares the same on-disk state.)
+
+Follow-ups are real multi-turn conversations: the script keeps the running
+chat in `$alfred_workflow_cache/ephemeral-thread.json` (an array of
+`{role, content}` messages) and feeds the whole thread to `cursor-query.sh`
+via the `--messages-file` flag on every turn, so the assistant has full prior
+context. The active thread is identified by the `thread_id` workflow
+variable, which Alfred carries across the rerun loop *and* across the
+user typing the next follow-up into the text view's input. Pressing
+<kbd>Esc</kbd> and re-triggering `g` arrives without `thread_id` set, which
+resets the thread.
+
+Cursor CLI does not accept the Responses API's structured message array.
+`cursor-query.sh` renders the saved roles into a labeled transcript and sends
+that transcript with the configured instructions on each turn.
 
 ### 2. Persistent (`gg`)
 
@@ -125,7 +141,7 @@ result copies just the answer; ⌘L pops it in Large Type via the `text`
 field.
 
 History is appended automatically by `scripts/ephemeral.sh` once the
-streaming `codex` process exits cleanly. Disable via the **Enable Ephemeral
+streaming Cursor CLI process exits cleanly. Disable via the **Enable Ephemeral
 History** checkbox if you prefer the old "nothing is saved" behaviour. To
 nuke the history manually:
 
@@ -139,10 +155,17 @@ rm -f "$(osascript -e 'tell application "Alfred" to get path to workflow data fo
 Keyword (gl) ──► Text View
 ```
 
-`scripts/last-view.sh` `tail -n 1`s
-`$alfred_workflow_data/ephemeral-history.jsonl` and renders that entry into
-the same Text View shell used by the history browser. The keyword takes no
-argument — it's a one-keystroke shortcut for "show me what I just asked".
+`scripts/last-view.sh` reopens the *entire* most recent ephemeral thread —
+not just the last Q&A pair — and lets you continue it by typing a follow-up
+into the text view's input. On the first invocation it bootstraps the cache
+thread file from `$alfred_workflow_data/last-thread.json` (a snapshot
+written by `ephemeral.sh` after every completed assistant turn), mints a
+fresh `thread_id`, then `exec`s `ephemeral.sh` so all rendering and
+streaming logic is shared with the `g` keyword. If no `last-thread.json`
+exists yet (e.g. you upgraded from the original single-turn behavior) it
+falls back to synthesizing a one-turn thread from the newest line of
+`ephemeral-history.jsonl` so you can still reopen and continue your most
+recent answer.
 
 ### 5. Terminal command (`gt`)
 
@@ -150,7 +173,7 @@ argument — it's a one-keystroke shortcut for "show me what I just asked".
 Keyword (gt <query>) ──► Run Script ──► Copy to Clipboard (auto-paste)
 ```
 
-`scripts/terminal-cmd.sh` calls `codex-query.sh` with a strict system prompt
+`scripts/terminal-cmd.sh` calls `cursor-query.sh` with strict instructions
 that forbids prose and code fences, then post-processes the output to strip
 any stray fences or `$`/`sh ` prefixes. The clipboard output node is set to
 **transient** + **auto-paste**, so the command lands at your terminal cursor
@@ -169,14 +192,14 @@ Workflow/
 ├── icon.png
 ├── info.plist                 # Alfred workflow definition
 └── scripts/
-    ├── codex-query.sh         # shared `codex responses` wrapper (streams text)
+    ├── cursor-query.sh        # shared Cursor CLI Ask-mode wrapper (streams text)
     ├── ephemeral-filter.js    # JXA Script Filter (returns the items JSON)
-    ├── ephemeral.sh           # bash Text View input (streams the answer; live polling)
-    ├── ephemeral.js           # JXA Text View input (kept as reference fallback)
+    ├── ephemeral.sh           # bash Text View input (streams the answer; live polling, multi-turn threads)
+    ├── ephemeral.js           # JXA Text View input (slower reference fallback; same thread state)
     ├── history-record.sh      # appends completed ephemeral Q&A pairs to JSONL
     ├── history-filter.sh      # Script Filter listing past ephemeral entries
     ├── history-view.sh        # Text View input: renders a saved entry
-    ├── last-view.sh           # Text View input: renders the most recent entry (`gl`)
+    ├── last-view.sh           # Text View input: reopens the most recent thread (`gl`); delegates to ephemeral.sh for continuation
     ├── persistent.sh          # opens chatgpt.com and auto-submits
     └── terminal-cmd.sh        # generates a single shell command
 ```
