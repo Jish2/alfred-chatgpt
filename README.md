@@ -1,8 +1,9 @@
 # <img src='Workflow/icon.png' width='45' align='center' alt='icon'> Alfred ChatGPT (codex)
 
-Four lightweight ChatGPT modes for Alfred, all powered by the local
-[`codex`](https://github.com/openai/codex) CLI. Uses your **ChatGPT
-subscription** through the OpenAI Responses API — **no API key required**.
+Five lightweight ChatGPT modes for Alfred, powered by either the local
+[`codex`](https://github.com/openai/codex) CLI or the OpenAI-compatible LLM
+Gateway. The default Codex backend uses your **ChatGPT subscription** through
+the OpenAI Responses API; the Gateway backend uses an LCA token from SAPI.
 
 > Forked from [`alfredapp/openai-workflow`](https://github.com/alfredapp/openai-workflow).
 > The original API-key + chat-history + DALL·E machinery has been removed in
@@ -21,14 +22,17 @@ subscription** through the OpenAI Responses API — **no API key required**.
 ## Requirements
 
 1. **macOS Alfred** with the Powerpack.
-2. [`codex`](https://github.com/openai/codex) CLI on `PATH`, signed in to your
-   ChatGPT account (`codex login`). Tested with `codex-cli` ≥ 0.122.
-3. `jq` and `python3`. Both ship with macOS / Homebrew defaults; the workflow
+2. `jq` and `python3`. Both ship with macOS / Homebrew defaults; the workflow
    adds `/opt/homebrew/bin` to `PATH` automatically when launched from Alfred.
+3. For the **Codex CLI** provider: [`codex`](https://github.com/openai/codex)
+   on `PATH`, signed in to your ChatGPT account (`codex login`).
+4. For the **LLM Gateway** provider: `sapi` on `PATH` and authorization for
+   the configured gateway audience. The workflow runs `sapi lca-token` first;
+   if token issuance fails, it runs `sapi login` and retries token issuance.
 
-The workflow shells out to `codex responses` (the raw Responses API), bypassing
-the Codex agent loop entirely — no shell, `apply_patch`, or MCP. It's just an
-LLM call.
+The workflow uses the selected backend's raw Responses API, bypassing the
+Codex agent loop entirely — no shell, `apply_patch`, or MCP. It's just an LLM
+call.
 
 ## Install
 
@@ -55,6 +59,13 @@ All settings live in the workflow's **Configuration** sheet:
   `gpt-5.2-mini`, `gpt-4o`, `o3`. Whatever `codex` lets you query is fair game.
 - **Reasoning Effort** — `none` / `low` / `medium` / `high` / `xhigh`. Lower is
   faster. Note: `gpt-5.2` does **not** accept `minimal`.
+- **Inference Provider** — `codex` (default) or `gateway`. This applies to
+  ephemeral and terminal-command modes.
+- **LLM Gateway URL** — defaults to the sitetest3 gateway URL from the gateway
+  documentation. Set the production URL when using that environment.
+- **LLM Gateway SAPI Audience** — defaults to `rbx.st3.llm-gateway`; use
+  `rbx.llm-gateway` for production.
+- **LLM Gateway Model** — defaults to `gpt-5.6-luna`.
 - **Ephemeral System Prompt** — instructions for the ephemeral mode. Default
   asks for short, direct answers.
 - **Terminal System Prompt** — strict instructions to emit a single shell

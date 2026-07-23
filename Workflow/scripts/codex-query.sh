@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Query the raw OpenAI Responses API through the local `codex` ChatGPT
-# subscription. Skips the Codex agent loop entirely (no shell, apply_patch,
-# MCP, etc.) and streams plain model output to stdout.
+# Query an OpenAI-compatible Responses API and stream plain model output.
+# The default backend is the local `codex` ChatGPT subscription; the
+# `gateway` backend uses LLM Gateway with an LCA token issued by SAPI.
 #
 # Adapted from ~/github/scripts/query-chat-gpt-through-codex.sh
 #
@@ -31,6 +31,7 @@ QUERY=""
 MODEL="${CODEX_MODEL:-gpt-5.4-mini}"
 SYSTEM="${CODEX_SYSTEM:-You are a helpful assistant. Be concise and direct.}"
 REASONING="${CODEX_REASONING:-}"
+PROVIDER="${LLM_PROVIDER:-${llm_provider:-codex}}"
 RAW=0
 TRAILING_NEWLINE=1
 
@@ -65,6 +66,104 @@ fi
 
 # Resolve `codex` and `jq` even when launched from Alfred (which has a minimal PATH).
 PATH="${PATH}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+export PATH
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "$PROG: 'jq' not found on PATH." >&2
+  exit 127
+fi
+
+gateway_query() {
+  local gateway_url="${llm_gateway_url:-https://apis.sitetest3.simulpong.com/llm-gateway}"
+  local audience="${llm_gateway_audience:-rbx.st3.llm-gateway}"
+  local token=""
+
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "$PROG: 'curl' not found on PATH." >&2
+    return 127
+  fi
+  if ! command -v sapi >/dev/null 2>&1; then
+    echo "$PROG: 'sapi' not found on PATH; install/configure SAPI for LLM Gateway." >&2
+    return 127
+  fi
+
+  # A token may expire between Alfred invocations. Try the cheap token
+  # refresh first; only open the SAPI login flow when issuance fails.
+  if ! token="$(sapi lca-token -a "$audience")"; then
+    echo "LLM Gateway token request failed; running sapi login…" >&2
+    sapi login >&2
+    token="$(sapi lca-token -a "$audience")" || {
+      return 1
+    }
+  fi
+  token="$(printf '%s\n' "$token" | tail -n 1 | tr -d '\r')"
+  if [[ -z "$token" ]]; then
+    echo "$PROG: sapi lca-token returned an empty token." >&2
+    return 1
+  fi
+
+  local payload
+  payload="$(
+    jq -n \
+      --arg model "$MODEL" \
+      --arg sys "$SYSTEM" \
+      --arg user "$QUERY" \
+      --arg effort "$REASONING" \
+      '{
+        model: $model,
+        stream: true,
+        store: false,
+        instructions: $sys,
+        input: [ { role: "user", content: $user } ]
+      }
+      + (if $effort == "" then {} else { reasoning: { effort: $effort } } end)'
+  )"
+
+  # Responses API streaming is SSE. Ignore event names and parse only data
+  # records containing response.output_text.delta.
+  set +e
+  printf '%s' "$payload" \
+    | curl --silent --show-error --no-buffer \
+        --fail-with-body \
+        --request POST "${gateway_url%/}/v1/responses" \
+        --header "Authorization: Bearer $token" \
+        --header "Content-Type: application/json" \
+        --data-binary @- \
+    | awk '
+      /^data: / {
+        data = substr($0, 7)
+        if (data == "[DONE]") next
+        print data
+        fflush()
+      }
+    ' \
+    | jq -j --unbuffered '
+        if .type == "response.output_text.delta" then .delta
+        else empty
+        end
+      '
+  local status=${PIPESTATUS[1]}
+  set -e
+
+  if [[ "$status" -ne 0 ]]; then
+    echo "$PROG: LLM Gateway request failed (HTTP/network status $status)." >&2
+    return "$status"
+  fi
+}
+
+if [[ "$PROVIDER" == "gateway" ]]; then
+  MODEL="${llm_gateway_model:-gpt-5.6-luna}"
+  gateway_query
+  if [[ "$TRAILING_NEWLINE" -eq 1 ]]; then
+    echo
+  fi
+  exit 0
+fi
+
+if [[ "$PROVIDER" != "codex" ]]; then
+  echo "$PROG: unknown LLM_PROVIDER '$PROVIDER'; expected codex or gateway." >&2
+  exit 2
+fi
 
 # Resolve `codex` into the array CODEX_CMD. Prefers a real binary on PATH, and
 # falls back to an interactive zsh probe so aliases / functions defined in the
@@ -145,11 +244,6 @@ if ! resolve_codex; then
   echo "$PROG: hint: install codex (https://github.com/openai/codex) or expose your alias to non-interactive shells." >&2
   exit 127
 fi
-if ! command -v jq >/dev/null 2>&1; then
-  echo "$PROG: 'jq' not found on PATH." >&2
-  exit 127
-fi
-
 PAYLOAD="$(
   jq -n \
     --arg model "$MODEL" \
