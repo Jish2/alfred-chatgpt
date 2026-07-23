@@ -2,7 +2,7 @@
 
 // Ephemeral ChatGPT prompt for Alfred (JXA reference fallback).
 //
-// Streams an answer from the local `codex` CLI into Alfred's streaming Text
+// Streams an answer from Cursor CLI into Alfred's streaming Text
 // View. Kept around as a slower JXA equivalent of `ephemeral.sh`; the bash
 // version is what's wired into `info.plist`. Both implementations share the
 // same on-disk thread file (`ephemeral-thread.json`) so they can be swapped
@@ -98,21 +98,24 @@ function renderThreadMd(messages) {
     .join("\n\n")
 }
 
-function startStream(scriptPath, messagesFile, model, reasoning, system, streamFile, pidFile) {
+function startStream(scriptPath, messagesFile, model, system, streamFile, pidFile) {
   // Empty stream file so we can append to it.
   $.NSFileManager.defaultManager.createFileAtPathContentsAttributes(streamFile, undefined, undefined)
 
   const task = $.NSTask.alloc.init
   task.executableURL = $.NSURL.fileURLWithPath("/bin/bash")
 
-  // Build env: pass model/reasoning/system through CODEX_* vars used by codex-query.sh.
-  // Also extend PATH so codex/jq are discoverable from Alfred's minimal env.
+  // Pass model/system through CURSOR_* vars used by cursor-query.sh.
+  // Also extend PATH so Cursor CLI and jq are discoverable from Alfred.
   const env = $.NSProcessInfo.processInfo.environment.mutableCopy
-  env.setObjectForKey(model, "CODEX_MODEL")
-  env.setObjectForKey(reasoning, "CODEX_REASONING")
-  env.setObjectForKey(system, "CODEX_SYSTEM")
+  env.setObjectForKey(model, "CURSOR_MODEL")
+  env.setObjectForKey(system, "CURSOR_SYSTEM")
   const existingPath = envVar("PATH")
-  env.setObjectForKey(`${existingPath}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin`, "PATH")
+  const home = envVar("HOME")
+  env.setObjectForKey(
+    `${existingPath}:${home}/.local/bin:${home}/.cursor/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin`,
+    "PATH"
+  )
   task.environment = env
 
   // Single-quote-escape both paths for bash.
@@ -145,15 +148,14 @@ function run(argv) {
   const threadFile = `${cacheDir}/ephemeral-thread.json`
   const messagesFile = `${cacheDir}/ephemeral-messages.json`
 
-  // Resolve the codex-query.sh script next to this file.
+  // Resolve the cursor-query.sh script next to this file.
   const pwd = envVar("PWD") || "."
-  const scriptPath = `${pwd}/scripts/codex-query.sh`
+  const scriptPath = `${pwd}/scripts/cursor-query.sh`
 
-  const model = envVar("codex_model") || "gpt-5.4-mini"
-  const reasoning = envVar("codex_reasoning") || "low"
-  const system = envVar("codex_system_ephemeral") ||
+  const model = envVar("cursor_model") || envVar("codex_model") || "gpt-5.6-luna-medium"
+  const system = envVar("cursor_system_ephemeral") || envVar("codex_system_ephemeral") ||
     "You are a helpful assistant. Be concise and direct. Prefer short answers and short code snippets when applicable."
-  const timeoutSeconds = parseInt(envVar("codex_timeout_seconds") || "30", 10)
+  const timeoutSeconds = parseInt(envVar("cursor_timeout_seconds") || envVar("codex_timeout_seconds") || "30", 10)
 
   const streamingNow = envVar("streaming_now") === "1"
   let threadId = envVar("thread_id")
@@ -195,10 +197,10 @@ function run(argv) {
     messages.push({ role: "user", content: typedQuery })
     writeThread(threadFile, messages)
 
-    // Snapshot the messages we'll feed to codex *before* the assistant
+    // Snapshot the messages we'll feed to Cursor *before* the assistant
     // turn lands, so a racing follow-up can't poison context.
     writeThread(messagesFile, messages)
-    startStream(scriptPath, messagesFile, model, reasoning, system, streamFile, pidFile)
+    startStream(scriptPath, messagesFile, model, system, streamFile, pidFile)
 
     const header = `${renderThreadMd(messages)}\n\n# Assistant\n\n`
     return JSON.stringify({
@@ -236,7 +238,7 @@ function run(argv) {
       deleteFile(pidFile)
       return JSON.stringify({
         response: `${header}${content}\n\n[Connection stalled]`,
-        footer: "codex did not produce output in time",
+        footer: "Cursor did not produce output in time",
         variables: buildVars(threadId),
         behaviour: { response: "replace", scroll: "end" }
       })

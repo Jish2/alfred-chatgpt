@@ -4,7 +4,7 @@
 //
 // Returns a single Alfred Script Filter item that forwards the typed query to
 // the downstream Text View, which is where `scripts/ephemeral.js` actually
-// streams the answer from the local `codex` CLI.
+// streams the answer from Cursor CLI.
 //
 // Kept intentionally tiny: a Script Filter MUST return `items` / `variables` /
 // `rerun(after)`, so we cannot reuse `ephemeral.js` here (that script returns

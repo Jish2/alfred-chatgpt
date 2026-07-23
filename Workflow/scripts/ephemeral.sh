@@ -2,7 +2,7 @@
 # Ephemeral ChatGPT prompt for Alfred — bash port of `ephemeral.js`.
 #
 # Drives the Text View streaming loop: each `rerun: 0.1` re-invokes this
-# script, which re-reads the cache file `codex-query.sh` is appending to and
+# script, which re-reads the cache file `cursor-query.sh` is appending to and
 # emits a single JSON frame for Alfred's Text View.
 #
 # Why bash instead of JXA: `osascript` cold-start is ~150–400 ms on macOS,
@@ -33,14 +33,13 @@ pid_file="$cache_dir/ephemeral-pid.txt"
 thread_file="$cache_dir/ephemeral-thread.json"
 messages_file="$cache_dir/ephemeral-messages.json"
 
-# Resolve `codex-query.sh` next to this script regardless of cwd.
+# Resolve `cursor-query.sh` next to this script regardless of cwd.
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-script_path="$script_dir/codex-query.sh"
+script_path="$script_dir/cursor-query.sh"
 
-model="${codex_model:-gpt-5.4-mini}"
-reasoning="${codex_reasoning:-low}"
-system="${codex_system_ephemeral:-You are a helpful assistant. Be concise and direct. Prefer short answers and short code snippets when applicable.}"
-timeout_s="${codex_timeout_seconds:-30}"
+model="${cursor_model:-${codex_model:-gpt-5.6-luna-medium}}"
+system="${cursor_system_ephemeral:-${codex_system_ephemeral:-You are a helpful assistant. Be concise and direct. Prefer short answers and short code snippets when applicable.}}"
+timeout_s="${cursor_timeout_seconds:-${codex_timeout_seconds:-30}}"
 
 streaming_now="${streaming_now:-}"
 thread_id="${thread_id:-}"
@@ -88,12 +87,12 @@ reset_thread() {
 
 start_stream() {
   : > "$stream_file"
-  # Snapshot the thread *before* launching codex so an in-flight assistant
+  # Snapshot the thread *before* launching Cursor so an in-flight assistant
   # turn (which we'll append later) doesn't accidentally get fed back as
   # context if the user fires another follow-up before this one finishes.
   cp "$thread_file" "$messages_file"
   # `nohup` so the streamer survives this script's exit; `&` detaches.
-  CODEX_MODEL="$model" CODEX_REASONING="$reasoning" CODEX_SYSTEM="$system" \
+  CURSOR_MODEL="$model" CURSOR_SYSTEM="$system" \
     nohup "$script_path" --no-newline --messages-file "$messages_file" \
       >"$stream_file" 2>&1 </dev/null &
   echo $! > "$pid_file"
@@ -137,7 +136,7 @@ fi
 
 # First invocation with a query: kick off the background streamer, append the
 # user turn to the thread, and emit an immediate header so the user has
-# something to look at while codex spins up.
+# something to look at while Cursor spins up.
 if [[ -z "$streaming_now" ]]; then
   rm -f "$stream_file" "$pid_file"
 
@@ -191,7 +190,7 @@ if [[ "$pid" -gt 0 ]] && pid_alive "$pid"; then
       --arg resp "${header}${content}
 
 [Connection stalled]" \
-      --arg foot "codex did not produce output in time" \
+      --arg foot "Cursor did not produce output in time" \
       --argjson vars "$vars" '
       {
         response: $resp,
@@ -232,7 +231,7 @@ if [[ -s "$thread_file" ]]; then
   cp "$thread_file" "$data_dir/last-thread.json" 2>/dev/null || true
 fi
 
-# Re-render now that the assistant turn is in the thread file. If codex
+# Re-render now that the assistant turn is in the thread file. If Cursor
 # produced nothing at all, fall back to a `[No response]` placeholder so the
 # user sees *something* under the trailing `# Assistant` heading.
 history_md="$(render_thread_md)"
